@@ -1,8 +1,8 @@
 // This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
-// © WALTFX
+// © Waltfx
 
 //@version=5
-indicator("WALTFX", "US30 PRE-NEW YORK by WALTFX", true, max_lines_count=500, max_labels_count=500, max_boxes_count=500, max_bars_back=500)
+indicator("WALTFX", "Velas alcistas con cuepro mayor", true, max_lines_count=500, max_labels_count=500, max_boxes_count=500, max_bars_back=500)
 
 //------------------------------------------------------------------------------
 // Settings
@@ -210,80 +210,29 @@ if not kzO and timeframe.isintraday and tfM <= kzSH
 bgcolor(dwmS and not kzO and timeframe.isintraday and tfM <= kzSH ? xChg ? dwmC : na : na)
 
 
-//------------------------------------------------------------------------------
-// Candlestick Patterns (Integración de patrones WIP US30 Engulfing)
-//------------------------------------------------------------------------------
-atr_val = ta.atr(100)
-
-// Función helper para calcular x*100/y
-pr(x, y) =>
-    x * 100 / y
-
-LS(x) => pr(x, high - low) > 70
-VS(x) => pr(x, high - low) < 15
-SS(x) => pr(x, high - low) > 15 and pr(x, high - low) < 30
-
-sG(x, y) => math.abs(x - y) < atr_val / 8 and math.abs(x - y) > atr_val / 16  // SMALL GAP
-nG(x, y) => math.abs(x - y) > atr_val / 8 and math.abs(x - y) < atr_val * 1.1 / 2  // NORMAL GAP
-lG(x, y) => math.abs(x - y) > atr_val * 1.1 / 2                                   // LARGE GAP
-
-/// Patrones de velas (solo se dibujan si se cumple el filtro OPENING)
-data = math.abs(open - close) <= (high - low) * 0.1
-plotchar(data and isOpenSession, title="Doji", char="D", color=color.rgb(255,215,0))
-
-data12 = (open[1] > close[1] and close > open and close >= open[1] and 
-          close[1] >= open and (close - open) > (open[1] - close[1]))
-plotshape(data12 and isOpenSession, title="Bullish Engulfing", location=location.belowbar, color=color.green, style=shape.arrowup, text="Engulfing")
-
-data43 = (close > open and close > close[1] and open > open[1] and open < close[1] and 
-          close[1] > close[2] and open[1] > open[2] and open[1] < close[2])
-plotshape(data43 and isOpenSession, title="Bullish Three White Soldiers", location=location.belowbar, color=color.green, style=shape.arrowup, text="Three\nWhite\nSoldiers")
-
-data11 = ((high - low) > 3 * math.abs(open - close)) and 
-         ((close - low) > 0.8 * (high - low)) and 
-         ((open - low) > 0.8 * (high - low))
-plotshape(data11 and isOpenSession, title="Bullish Dragonfly Doji", location=location.belowbar, color=color.green, style=shape.arrowup, text="Dragonfly\nDoji")
-
-data13 = ((high - low) > 3 * (open - close)) and 
-         ((close - low) / (0.001 + high - low) > 0.6) and 
-         ((open - low) / (0.001 + high - low) > 0.6)
-plotshape(data13 and isOpenSession, title="Bullish Hammer", location=location.belowbar, color=color.green, style=shape.diamond, text="Hammer")
-
-lower2 = ta.lowest(low, 10)[1]
-data27 = ((open[2] - close[2]) >= 0.7 * (high[2] - low[2])) and 
-         ((high[2] - low[2]) >= (lower2 - lower2)) and 
-         (close[1] < close[2]) and 
-         (open[1] < close[2]) and 
-         (math.abs(close[1] - open[1]) <= 0.05 * (high[1] - low[1])) and 
-         ((high - low) >= (lower2 - lower2)) and 
-         ((close - open) >= 0.7 * (high - low)) and 
-         (open > close[1]) and (open > open[1])
-plotshape(data27 and isOpenSession, title="Bullish Morning Doji Star", location=location.belowbar, color=color.green, style=shape.arrowup, text="Morning\nDoji\nStar", offset=-1)
- 
-data28 = (open[2] > close[2]) and 
-         ((open[2] - close[2]) > 0.6 * (high[2] - low[2])) and 
-         (close[2] > open[1]) and 
-         (math.abs(open[1] - close[1]) < 0.5 * math.abs(open[2] - close[2])) and 
-         ((high[1] - low[1]) > 3 * (close[1] - open[1])) and 
-         (close > open) and 
-         (open > open[1]) and 
-         (open > close[1])
-plotshape(data28 and isOpenSession, title="Bullish Morning Star", location=location.belowbar, color=color.green, style=shape.arrowup, text="Morning\nStar", offset=-1)
-
-
 
 //------------------------------------------------------------------------------
-// Inputs para la sesión de velas envolventes
+// CANDLES 
 //------------------------------------------------------------------------------
-engulfSession   = input.session("0830-0850", "Session Envolventes", group="Señal de Compra", inline="ENG")
-isEngulfSession = not na(time(timeframe.period, engulfSession, "UTC-5"))
 
-//------------------------------------------------------------------------------
-// Señal de Compra: La vela actual envuelve el cuerpo (open-close) de las últimas N velas
-//------------------------------------------------------------------------------
-engulfCount  = input.int(3, "Número de velas a envolver", minval=1, group="Señal de Compra")
-minBodyPts   = input.float(1.0, "Tamaño mínimo del cuerpo (puntos)", minval=0, group="Señal de Compra")
-lowestOpen   = ta.lowest(open[1], engulfCount)
-highestClose = ta.highest(close[1], engulfCount)
-buySignal    = (open < lowestOpen) and (close > highestClose) and (math.abs(close - open) >= minBodyPts) and isEngulfSession
-plotshape(buySignal, title="Señal de Compra", location=location.belowbar, color=color.rgb(4, 31, 18), style=shape.labelup, text="BUY", offset=0)
+// Input para el mínimo tamaño de cuerpo requerido (en puntos)
+minCuerpo = input.int(5000, "Mínimo tamaño del cuerpo (puntos)", minval=1)
+
+// Cálculo del cuerpo actual y anterior
+cuerpoActual = math.abs(close - open)
+cuerpoAnterior = math.abs(close[1] - open[1])
+
+// Condiciones
+esAlcista = close > open
+cuerpoMayorQueAnterior = cuerpoActual > cuerpoAnterior
+superaMinimo = cuerpoActual >= minCuerpo
+
+// Condición principal
+condicionAzul = esAlcista and cuerpoMayorQueAnterior and superaMinimo
+
+// Pintar velas
+barcolor(condicionAzul ? color.blue : na)
+
+
+
+
